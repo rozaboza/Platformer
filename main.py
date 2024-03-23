@@ -14,8 +14,9 @@ walkLeft = [pygame.image.load(os.path.join('assets', 'L1.png')), pygame.image.lo
 bg = pygame.image.load(os.path.join('assets', 'bg.jpg'))
 char = pygame.image.load(os.path.join('assets', 'standing.png'))
 
+font = pygame.font.SysFont("comicsans", 30, True)
 clock = pygame.time.Clock()
-
+score = 0
 
 class player(object):
     def __init__(self, x, y, width, height):
@@ -30,7 +31,7 @@ class player(object):
       self.walkCount = 0
       self.jumpCount = 10
       self.standing = True
-      self.hitbox = (self.x + 17, self.y + 11, 29. 52)
+      self.hitbox = (self.x + 17, self.y + 11, 29, 52)
 
     def draw(self, DISPLAYSURF):
       if self.walkCount + 1>= 27:
@@ -48,7 +49,8 @@ class player(object):
         else:
           DISPLAYSURF.blit(walkLeft[0], (self.x, self.y))
       self.hitbox = (self.x + 17, self.y + 11, 29, 52)
-      pygame.draw.rect(DISPLAYSURF, (255,0,0), self.hitbox,2)
+      # pygame.draw.rect(DISPLAYSURF, (255,0,0), self.hitbox,2)
+      
           
     
 class projectile(object):
@@ -76,20 +78,32 @@ class enemy(object):
     self.path = [x, end] 
     self.walkCount = 0
     self.vel = 3
+    self.health = 10
+    self.visible = True
+    self.hitbox = (self.x + 17, self.y + 2, 31, 57)
   # Goes inside the enemy class 
   def draw(self, DISPLAYSURF):
     self.move()
-    if self.walkCount + 1>= 33: 
-      self.walkCount = 0
+    if self.visible:
+      if self.walkCount + 1>= 33: 
+        self.walkCount = 0
 
-    
-    if self.vel > 0:
-      DISPLAYSURF.blit(self.walkRight[self.walkCount//3], (self.x, self.y))
-      self.walkCount += 1
+      
+      if self.vel > 0:
+        DISPLAYSURF.blit(self.walkRight[self.walkCount//3], (self.x, self.y))
+        self.walkCount += 1
+      else:
+        DISPLAYSURF.blit(self.walkLeft[self.walkCount//3], (self.x, self.y))
+        self.walkCount += 1
+    self.hitbox = (self.x + 17, self.y + 2, 31, 57)
+
+
+  def hit(self):
+    if self.health > 0:
+      self.health -= 1
     else:
-      DISPLAYSURF.blit(self.walkLeft[self.walkCount//3], (self.x, self.y))
-      self.walkCount += 1
-
+      self.visible = False
+      print('hit')
 
   # Goes inside the enemy class
   def move(self):
@@ -114,7 +128,9 @@ def redrawGameWindow():
     #goblin2.draw(DISPLAYSURF)
     goblin.draw(DISPLAYSURF)
     man.draw(DISPLAYSURF)
-    
+    text = font.render("Score:" +str(score), 1, (0,0,0))
+    DISPLAYSURF.blit(text, (390,10))
+  
     for bullet in bullets:
       bullet.draw(DISPLAYSURF)
 
@@ -122,11 +138,8 @@ def redrawGameWindow():
 
 
   #mainloop
-    shootLoop = 0
-    if shootLoop > 0:
-      shootLoop += 1
-    if shootLoop > 3:
-      shootLoop = 0
+shootLoop = 0
+
 goblin = enemy(100, 410, 64, 64, 450)
 #goblin2 = enemy(50, 410, 64, 64, 450)
 #goblin3 = enemy(150, 410, 64, 64, 450)
@@ -136,6 +149,10 @@ run = True
 while run:
     clock.tick(27)
   
+    if shootLoop > 0:
+      shootLoop += 1
+    if shootLoop > 3:
+      shootLoop = 0
     for event in pygame.event.get():
       if event.type == pygame.QUIT:
         run = False
@@ -144,6 +161,9 @@ while run:
       
       if bullet.y - bullet.radius < goblin.hitbox[1] + goblin.hitbox[3] and bullet.y + bullet.radius > goblin.hitbox[1]: 
         if bullet.x + bullet.radius > goblin.hitbox[0] and bullet.x - bullet.radius < goblin.hitbox[0] + goblin.hitbox[2]:
+          goblin.hit()
+          bullets.pop(bullets.index(bullet))
+          score += 1
 
 
 
@@ -163,6 +183,7 @@ while run:
   
       if len(bullets) < 5:
           bullets.append(projectile(round(man.x + man.width //2), round(man.y + man.height//2), 6, (66,0,0), facing))
+          shootLoop = 1
   
     if keys[pygame.K_LEFT] and man.x > man.vel:
       man.x -= man.vel
@@ -198,5 +219,5 @@ while run:
   
 
     redrawGameWindow()
-  
+   
 pygame.quit()
