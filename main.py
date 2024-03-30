@@ -13,7 +13,10 @@ walkLeft = [pygame.image.load(os.path.join('assets', 'L1.png')), pygame.image.lo
 
 bg = pygame.image.load(os.path.join('assets', 'bg.jpg'))
 char = pygame.image.load(os.path.join('assets', 'standing.png'))
-
+bulletSound = pygame.mixer.Sound(os.path.join('assets','bullet.mp3'))
+hitSound = pygame.mixer.Sound(os.path.join('assets', 'hit.mp3'))
+music = pygame.mixer.music.load(os.path.join('assets', 'music.mp3'))
+pygame.mixer.music.play(-1)
 font = pygame.font.SysFont("comicsans", 30, True)
 clock = pygame.time.Clock()
 score = 0
@@ -51,7 +54,25 @@ class player(object):
       self.hitbox = (self.x + 17, self.y + 11, 29, 52)
       # pygame.draw.rect(DISPLAYSURF, (255,0,0), self.hitbox,2)
       
-          
+    def hit(self):
+      self.isJump = False
+      self.JumpCount = 10
+      self.x = 60
+      self.y = 410
+      self.walkCount = 0
+      font1 = pygame.font.SysFont('comicsans', 100)
+      text = font1.render('-5', 1, (255,0,0))
+      DISPLAYSURF.blit(text, (250 - (text.get_width()/2),200))
+      pygame.display.update()
+      i = 0
+      while i < 50:
+        pygame.time.delay(10)
+        i += 1
+        for event in pygame.event.get():
+          if event.type == pygame.QUIT:
+            i = 301
+            pygame.quit()
+
     
 class projectile(object):
     def __init__(self,x,y,radius,color,facing):
@@ -95,7 +116,9 @@ class enemy(object):
       else:
         DISPLAYSURF.blit(self.walkLeft[self.walkCount//3], (self.x, self.y))
         self.walkCount += 1
-    self.hitbox = (self.x + 17, self.y + 2, 31, 57)
+      self.hitbox = (self.x + 17, self.y + 2, 31, 57)
+      pygame.draw.rect(DISPLAYSURF, (255,0,0), (self.hitbox[0], self.hitbox[1] - 20, 50, 10)) # NEW
+      pygame.draw.rect(DISPLAYSURF, (0,128,0), (self.hitbox[0], self.hitbox[1] - 20, 50 - (5 * (10 - self.health)), 10)) # NEW
 
 
   def hit(self):
@@ -104,6 +127,7 @@ class enemy(object):
     else:
       self.visible = False
       print('hit')
+      hitSound.play()
 
   # Goes inside the enemy class
   def move(self):
@@ -129,12 +153,12 @@ def redrawGameWindow():
     goblin.draw(DISPLAYSURF)
     man.draw(DISPLAYSURF)
     text = font.render("Score:" +str(score), 1, (0,0,0))
-    DISPLAYSURF.blit(text, (390,10))
-  
+    DISPLAYSURF.blit(text, (360,10))
     for bullet in bullets:
       bullet.draw(DISPLAYSURF)
 
     pygame.display.update()
+
 
 
   #mainloop
@@ -148,7 +172,11 @@ bullets = []
 run = True
 while run:
     clock.tick(27)
-  
+    if goblin.visible == True:
+      if man.hitbox[1] < goblin.hitbox[1] + goblin.hitbox[3] and man.hitbox[1] + man.hitbox[3] > goblin.hitbox[1]:
+        if man.hitbox[0] + man.hitbox[2] > goblin.hitbox[0] and man.hitbox[0] < goblin.hitbox[0] + goblin.hitbox[2]:
+          man.hit()
+          score -= 5
     if shootLoop > 0:
       shootLoop += 1
     if shootLoop > 3:
@@ -180,6 +208,7 @@ while run:
         facing = -1
       else:
         facing = 1
+        bulletSound.play()
   
       if len(bullets) < 5:
           bullets.append(projectile(round(man.x + man.width //2), round(man.y + man.height//2), 6, (66,0,0), facing))
